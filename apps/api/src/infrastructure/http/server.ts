@@ -54,6 +54,8 @@ export async function buildServer(deps: Deps, config: AppConfig): Promise<Fastif
           },
     trustProxy: config.env === 'production',
     bodyLimit: 1024 * 1024,
+    // `/api/health/` y `/api/health` son la misma ruta (chequeos de salud de la plataforma de despliegue).
+    routerOptions: { ignoreTrailingSlash: true },
   });
 
   app.decorate('deps', deps);
@@ -150,7 +152,8 @@ export async function buildServer(deps: Deps, config: AppConfig): Promise<Fastif
     await app.register(fastifyStatic, { root: config.webDist, wildcard: false, index: false });
     app.get('/', (_req, reply) => reply.type('text/html').send(indexHtml()));
     app.setNotFoundHandler((req, reply) => {
-      if (req.url.startsWith('/api/') || req.method !== 'GET') {
+      const isPageRequest = req.method === 'GET' || req.method === 'HEAD';
+      if (req.url.startsWith('/api/') || !isPageRequest) {
         return reply
           .status(404)
           .send({ error: { code: 'NOT_FOUND', message: 'Ruta no encontrada' } });

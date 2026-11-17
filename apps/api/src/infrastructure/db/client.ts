@@ -23,6 +23,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const MIGRATIONS_DIR = path.resolve(here, '../../../drizzle');
 
 /**
+ * Traduce el `sslmode` de la URL a la opción `ssl` de node-postgres.
+ * Con cualquier modo distinto de `disable` se exige TLS verificando el certificado del servidor
+ * (proveedores gestionados como Neon usan certificados públicos válidos).
+ */
+export function postgresConnection(url: string): pg.PoolConfig {
+  const parsed = new URL(url);
+  const sslmode = parsed.searchParams.get('sslmode');
+  parsed.searchParams.delete('sslmode');
+  const ssl = sslmode && sslmode !== 'disable' ? { rejectUnauthorized: true } : undefined;
+  return { connectionString: parsed.toString(), ssl };
+}
+
+/**
  * Abre la base de datos:
  *  - `postgres://...` → PostgreSQL real (producción).
  *  - `memory://`      → PGlite en memoria (tests).
@@ -31,11 +44,7 @@ export const MIGRATIONS_DIR = path.resolve(here, '../../../drizzle');
  */
 export async function openDatabase(url: string | undefined): Promise<DbHandle> {
   if (url && /^postgres(ql)?:\/\//.test(url)) {
-    const pool = new pg.Pool({
-      connectionString: url,
-      ssl: /sslmode=require/.test(url) ? { rejectUnauthorized: false } : undefined,
-      max: 10,
-    });
+    const pool = new pg.Pool({ ...postgresConnection(url), max: 10 });
     const db = drizzlePg({ client: pool, schema });
     await migratePg(db, { migrationsFolder: MIGRATIONS_DIR });
     return { db: db as unknown as Db, kind: 'postgres', close: () => pool.end() };
