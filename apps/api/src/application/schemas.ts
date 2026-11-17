@@ -10,8 +10,8 @@ import { DomainError } from '../domain/errors.js';
 const trimmed = (min: number, max: number, label: string) =>
   z
     .string({
-      required_error: `${label} es obligatorio`,
-      invalid_type_error: `${label} no es válido`,
+      error: (issue) =>
+        issue.input === undefined ? `${label} es obligatorio` : `${label} no es válido`,
     })
     .trim()
     .min(min, `${label} debe tener al menos ${min} caracteres`)
@@ -114,7 +114,7 @@ export const paginationSchema = z.object({
 });
 
 /** Valida y convierte errores de Zod en un DomainError legible. */
-export function parse<T extends z.ZodTypeAny>(schema: T, input: unknown): z.output<T> {
+export function parse<T extends z.ZodType>(schema: T, input: unknown): z.output<T> {
   const result = schema.safeParse(input);
   if (!result.success) {
     const first = result.error.issues[0];
