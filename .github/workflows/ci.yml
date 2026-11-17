@@ -13,7 +13,7 @@ jobs:
     name: Lint, tipos, tests y build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build -t incidapp:ci .
 
   e2e:
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
